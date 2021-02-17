@@ -157,6 +157,7 @@ class FiducialsNode {
     ros::NodeHandle nh;
     ros::NodeHandle pnh;
 
+    unsigned int solver;
     image_transport::Publisher image_pub;
 
     cv::Ptr<aruco::DetectorParameters> detectorParams;
@@ -488,7 +489,7 @@ bool FiducialsNode::estimatePoseMultiMarkers(float markerLength,
        // int npoints = std::max(opoints.checkVector(3, CV_32F), opoints.checkVector(3, CV_64F));
        //ROS_INFO("Assertion is %d , %d", npoints, std::max(ipoints.checkVector(2, CV_32F), ipoints.checkVector(2, CV_64F)));
        // ROS_INFO("Corners %d, ObjectPoints %d, npoints %d", countz, markerObjPoints.size(), npoints);
-       cv::solvePnP(markerObjPoints, fiducial_bundles[i].corners, cameraMatrix, distCoeffs, rvecs_combined, tvecs_combined, false);//);
+       cv::solvePnP(markerObjPoints, fiducial_bundles[i].corners, cameraMatrix, distCoeffs, rvecs_combined, tvecs_combined, false, solver);//);
 
        fiducial_bundles[i].rvecs = rvecs_combined;
        fiducial_bundles[i].tvecs = tvecs_combined;      
@@ -543,6 +544,8 @@ void FiducialsNode::configCallback(aruco_detect::DetectorParamsConfig & config, 
     detectorParams->perspectiveRemoveIgnoredMarginPerCell = config.perspectiveRemoveIgnoredMarginPerCell;
     detectorParams->perspectiveRemovePixelPerCell = config.perspectiveRemovePixelPerCell;
     detectorParams->polygonalApproxAccuracyRate = config.polygonalApproxAccuracyRate;
+
+    solver = config.pnpSolver;
 }
 
 void FiducialsNode::ignoreCallback(const std_msgs::String& msg)
@@ -582,19 +585,11 @@ void FiducialsNode::vector2fto2d(const vec2f in_vec, vec2d& out_vec)
     std::vector <Point2d>  smallvec;
     Point2d p2d;
     out_vec.clear();
-    int size1 = in_vec.size();
-    int size2 = 0;
-    ROS_INFO("Size1 %d", size1);
-    out_vec.reserve(size1);
     for(int i = 0; i < in_vec.size(); i++)
     {   
-        size2 = in_vec[i].size();
-        (out_vec[i]).reserve(size2);
         smallvec.clear();
-        //ROS_INFO("Reserving %d for %d from %d vector", i, size2, size1);
         for(int j = 0; j < in_vec[i].size(); j++)
         {
-            //ROS_INFO("Accessing %d,%d, sizes %d",i, j, int(out_vec.size()));
             p2d.x = in_vec[i][j].x;
             p2d.y = in_vec[i][j].y;
             smallvec.push_back(p2d);
